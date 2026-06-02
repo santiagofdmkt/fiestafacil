@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { supabase } from './lib/supabase'
 
 const ZONAS = [
   { nombre: 'Palermo',   foto: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&q=80' },
@@ -10,17 +11,6 @@ const ZONAS = [
   { nombre: 'Almagro',   foto: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=400&q=80' },
 ]
 
-const SALONES_MOCK = [
-  { id: '1', nombre: 'Salón El Principito', zona: 'Palermo',   capacidad: 80,  precio: 150000, foto: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&q=80', tipo: 'Infantil' },
-  { id: '2', nombre: 'La Casita Mágica',    zona: 'Belgrano',  capacidad: 60,  precio: 120000, foto: 'https://images.unsplash.com/photo-1464349153735-7db50ed83c84?w=600&q=80', tipo: 'Infantil' },
-  { id: '3', nombre: 'Salón Fantasía',      zona: 'Caballito', capacidad: 100, precio: 180000, foto: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&q=80', tipo: 'Quinceañera' },
-  { id: '4', nombre: 'Mundo Feliz',         zona: 'Recoleta',  capacidad: 70,  precio: 200000, foto: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80', tipo: 'Infantil' },
-  { id: '5', nombre: 'Salón Los Sueños',    zona: 'San Telmo', capacidad: 90,  precio: 160000, foto: 'https://images.unsplash.com/photo-1516478177764-9fe5bd7e9717?w=600&q=80', tipo: 'Eventos' },
-  { id: '6', nombre: 'El Castillo',         zona: 'Flores',    capacidad: 120, precio: 220000, foto: 'https://images.unsplash.com/photo-1578922746465-3a80a228f223?w=600&q=80', tipo: 'Infantil' },
-  { id: '7', nombre: 'Salón Arcoiris',      zona: 'Almagro',   capacidad: 50,  precio: 100000, foto: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=600&q=80', tipo: 'Infantil' },
-  { id: '8', nombre: 'Fiesta Total',        zona: 'Palermo',   capacidad: 150, precio: 280000, foto: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&q=80', tipo: 'Eventos' },
-]
-
 const CATEGORIAS = [
   { label: 'Cumple infantil', icon: '🎈', desc: 'Hasta 12 años' },
   { label: 'Quinceañera',     icon: '👑', desc: '15 años' },
@@ -28,7 +18,19 @@ const CATEGORIAS = [
   { label: 'Eventos',         icon: '🎊', desc: 'Empresas y más' },
 ]
 
-export default function Home() {
+const FOTO_DEFAULT = 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&q=80'
+
+export default async function Home() {
+  const { data: salones } = await supabase
+    .from('salones')
+    .select('*')
+    .eq('activo', true)
+    .order('created_at', { ascending: false })
+
+  const total = salones?.length || 0
+  const destacados = salones?.slice(0, 8) || []
+  const recientes = salones?.slice(0, 6) || []
+
   return (
     <div className="min-h-screen bg-white font-sans w-full overflow-x-hidden">
 
@@ -98,10 +100,10 @@ export default function Home() {
       <section className="border-b border-zinc-100 py-6 w-full">
         <div className="max-w-4xl mx-auto px-4 grid grid-cols-2 md:flex md:justify-center gap-6 md:gap-16">
           {[
-            { num: '200+', label: 'Salones disponibles' },
-            { num: 'CABA', label: 'Capital Federal' },
-            { num: '100%', label: 'Gratis para buscar' },
-            { num: '⚡',   label: 'Reserva online' },
+            { num: `${total}+`, label: 'Salones disponibles' },
+            { num: 'CABA',      label: 'Capital Federal' },
+            { num: '100%',      label: 'Gratis para buscar' },
+            { num: '⚡',        label: 'Reserva online' },
           ].map(s => (
             <div key={s.label} className="text-center">
               <p className="text-2xl font-bold" style={{ color: '#7C3AED' }}>{s.num}</p>
@@ -138,21 +140,25 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {SALONES_MOCK.slice(0, 8).map(s => (
+          {destacados.map(s => (
             <Link key={s.id} href={`/salon/${s.id}`}
               className="group block rounded-2xl overflow-hidden border border-zinc-100 hover:shadow-lg transition">
               <div className="relative h-44 bg-zinc-100 overflow-hidden">
-                <img src={s.foto} alt={s.nombre} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                <div className="absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded-lg" style={{ background: '#7C3AED' }}>
-                  {s.tipo}
+                <img src={FOTO_DEFAULT} alt={s.nombre}
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                <div className="absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded-lg"
+                  style={{ background: '#7C3AED' }}>
+                  {s.tipo || 'Infantil'}
                 </div>
               </div>
               <div className="p-3">
                 <p className="text-sm font-semibold text-zinc-800 line-clamp-1">{s.nombre}</p>
-                <p className="text-xs text-zinc-400 mt-0.5">📍 {s.zona} · hasta {s.capacidad} personas</p>
-                <p className="text-sm font-bold mt-2" style={{ color: '#F97316' }}>
-                  $ {s.precio.toLocaleString('es-AR')}
-                </p>
+                <p className="text-xs text-zinc-400 mt-0.5">📍 {s.direccion?.split('\n')[1] || s.direccion}</p>
+                {s.precio && (
+                  <p className="text-sm font-bold mt-2" style={{ color: '#F97316' }}>
+                    $ {s.precio.toLocaleString('es-AR')}
+                  </p>
+                )}
               </div>
             </Link>
           ))}
@@ -178,9 +184,9 @@ export default function Home() {
             </p>
             <ul className="space-y-4 mb-10">
               {[
-                { icon: '📩', title: 'Leads directos',          desc: 'El padre te contacta a vos, sin intermediarios.' },
-                { icon: '🤝', title: 'Sin ataduras',            desc: 'Sin contrato largo — arrancás y parás cuando querés.' },
-                { icon: '📅', title: 'Calendario online',       desc: 'Mostrá tu disponibilidad en tiempo real.' },
+                { icon: '📩', title: 'Leads directos',           desc: 'El padre te contacta a vos, sin intermediarios.' },
+                { icon: '🤝', title: 'Sin ataduras',             desc: 'Sin contrato largo — arrancás y parás cuando querés.' },
+                { icon: '📅', title: 'Calendario online',        desc: 'Mostrá tu disponibilidad en tiempo real.' },
                 { icon: '🏙️', title: 'Presente en todo el país', desc: 'Tu ciudad tiene su lugar, sin importar dónde estés.' },
               ].map(item => (
                 <li key={item.title} className="flex items-start gap-4">
@@ -209,7 +215,7 @@ export default function Home() {
                 style={{ background: 'linear-gradient(135deg, #7C3AED, #9333ea)' }}>
                 <div className="absolute top-[-30px] right-[-30px] w-40 h-40 rounded-full bg-white/10" />
                 <p className="text-purple-200 text-xs font-bold uppercase tracking-widest mb-2 relative z-10">Este mes en FiestaFácil</p>
-                <p className="text-4xl font-black relative z-10">200+</p>
+                <p className="text-4xl font-black relative z-10">{total}+</p>
                 <p className="text-purple-100 text-sm mt-1 relative z-10 font-medium">salones activos en CABA</p>
               </div>
               <div className="bg-white px-7 py-6 space-y-5">
@@ -278,19 +284,19 @@ export default function Home() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {SALONES_MOCK.slice(0, 6).map(s => (
+          {recientes.map(s => (
             <Link key={s.id} href={`/salon/${s.id}`}
               className="group block rounded-2xl overflow-hidden border border-zinc-100 hover:shadow-lg transition">
               <div className="relative h-52 bg-zinc-100 overflow-hidden">
-                <img src={s.foto} alt={s.nombre}
+                <img src={FOTO_DEFAULT} alt={s.nombre}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                  <p className="text-white font-bold text-lg">$ {s.precio.toLocaleString('es-AR')}</p>
+                  {s.precio && <p className="text-white font-bold text-lg">$ {s.precio.toLocaleString('es-AR')}</p>}
                 </div>
               </div>
               <div className="p-4">
                 <p className="text-sm font-semibold text-zinc-800 line-clamp-2 mb-1">{s.nombre}</p>
-                <p className="text-xs text-zinc-400 line-clamp-1">📍 {s.zona} · {s.tipo} · hasta {s.capacidad} personas</p>
+                <p className="text-xs text-zinc-400 line-clamp-1">📍 {s.direccion?.split('\n')[1] || s.direccion}</p>
               </div>
             </Link>
           ))}
